@@ -16,16 +16,14 @@
 void update();
 void printgame();
 void birthsnake();
-void chop_snake();
 void handleinput(int c);
 void change_direction(int d);
-
-struct point nexttail();
-struct point nexthead(int d);
+struct ends next();
 
 int **board;
-unsigned int *snake_length;
-int corners;
+int snake_length;
+struct point *snake;
+
 int snake_direction = RIGHT;
 int pause = 0;
 int running = 1;
@@ -36,8 +34,10 @@ struct point {
   int x;
 };
 
-struct point head;
-struct point tail;
+struct ends {
+  struct point head;
+  struct point tail;
+};
 
 int main() {
   struct timespec ts = {0, 100000000L};
@@ -70,11 +70,9 @@ int main() {
   game_columns = screen_cols / 2;
 
   board = malloc(screen_rows * sizeof(int *));
-  //tempboard = malloc(screen_rows * sizeof(int *));
 
   for (int i = 0; i < screen_rows; i++) {
     board[i] = malloc(game_columns * sizeof(int));
-    //tempboard[i] = malloc(game_columns * sizeof(int));
   }
 
   birthsnake();
@@ -102,10 +100,10 @@ void handleinput(int c) {
       change_direction(UP);
       break;
     case 'a':
-      change_direction(DOWN);
+      change_direction(LEFT);
       break;
     case 's':
-      change_direction(LEFT);
+      change_direction(DOWN);
       break;
     case 'd':
       change_direction(RIGHT);
@@ -121,85 +119,59 @@ void handleinput(int c) {
 }
 
 void change_direction(int direction) {
-  int shift_bit = CHAR_BIT * sizeof(int) - 2;
+  if ( snake_direction == direction ) return;
+  if ( snake_direction == UP && direction == DOWN) return;
+  if ( snake_direction == DOWN && direction == UP) return;
+  if ( snake_direction == LEFT && direction == RIGHT) return;
+  if ( snake_direction == RIGHT && direction == LEFT) return;
+
   snake_direction = direction;
-
-  corners += 1;
-  snake_length = realloc(snake_length, corners * sizeof(int));
-
-  snake_length[corners] = (snake_direction << shift_bit) | 1;
-}
-
-void chop_snake() {
-  memmove(snake_length, snake_length + 1, corners * sizeof(int));
-
-  corners -= 1;
-  snake_length = realloc(snake_length, corners * sizeof(int));
-}
-
-struct point nexttail() {
-  int shift_bit = CHAR_BIT * sizeof(int) - 2;
-  struct point nexttail = tail;
-
-  int direction = snake_length[0] >> shift_bit;
-  int count = snake_length[0] & ~(3 >> shift_bit);
-
-  //if (count < 1) {
-  //  chop_snake();
-  //} else {
-    snake_length[0] -= 1;
-  //}
-
-  /*mvprintw(0, 0, "direction: %d", direction);*/
-  switch (direction) {
-    case UP:
-      mvprintw(0, 0, "up: %d", nexttail.y);
-      nexttail.y -= 1;
-      break;
-    case DOWN:
-      nexttail.y += 1;
-      break;
-    case LEFT:
-      nexttail.x -= 1;
-      break;
-    case RIGHT:
-      mvprintw(0, 0, "right: %d", nexttail.x);
-      nexttail.x += 1;
-      break;
-  }
-
-  return nexttail;
 }
 
 void update() {
-  head = nexthead(snake_direction);
-  tail = nexttail();
+  struct ends nextthing = next(snake_direction);
+  struct point head = nextthing.head;
+  struct point tail = nextthing.tail;
 
+  mvprintw(0, 5, "y: %d\tx: %d\t length: %d\t", head.y, head.x, snake_length);
   board[head.y][head.x] = 1;
   board[tail.y][tail.x] = 0;
- 
-  snake_length[corners] += 1;
 }
 
-struct point nexthead(int direction) {
-  struct point nexthead = head;
+struct ends next(int direction) {
+  struct ends next;
+  next.head = snake[snake_length];
+  next.tail = snake[1];
 
   switch (direction) {
     case UP:
-      nexthead.y -= 1;
+      /*mvprintw(0, 0, "up: %d", nexthead.y);*/
+      next.head.y -= 1;
       break;
     case DOWN:
-      nexthead.y += 1;
+      //mvprintw(0, 0, "down: %d", nexthead.y);
+      next.head.y += 1;
       break;
     case LEFT:
-      nexthead.x -= 1;
+      next.head.x -= 1;
       break;
     case RIGHT:
-      nexthead.x += 1;
+      next.head.x += 1;
       break;
   }
 
-  return nexthead;
+
+  // works -
+  //snake_length += 1;
+  //snake = realloc(snake, snake_length * sizeof *snake);
+  //--
+
+
+  memmove(snake, snake + 1, snake_length * sizeof *snake);
+  snake[snake_length] = next.head;
+  snake[0] = next.tail;
+
+  return next;
 }
 
 void printgame() {
@@ -217,20 +189,26 @@ void printgame() {
 }
 
 void birthsnake() {
-  int shift_bit = CHAR_BIT * sizeof(int) - 2;
-
   board[10][20] = 1;
   board[10][21] = 1;
   board[10][22] = 1;
   board[10][23] = 1;
+  board[10][24] = 1;
+  board[10][26] = 1;
 
-  tail.y = 10;
-  tail.x = 20;
-  head.y = 10;
-  head.x = 23;
+  snake = malloc(6 * sizeof *snake);
+  snake_length = 5;
 
-  corners = 0;
-  snake_length = malloc(1 * sizeof(int));
-
-  snake_length[corners] = (snake_direction << shift_bit) | 3;
+  snake[0].y = 10;
+  snake[0].x = 20;
+  snake[1].y = 10;
+  snake[1].x = 21;
+  snake[2].y = 10;
+  snake[2].x = 22;
+  snake[3].y = 10;
+  snake[3].x = 23;
+  snake[3].y = 10;
+  snake[3].x = 24;
+  snake[3].y = 10;
+  snake[3].x = 25;
 }
