@@ -15,28 +15,27 @@
 
 void update();
 void printgame();
+void printgameover();
 void birthsnake();
+void makeapple();
 void handleinput(int c);
 void change_direction(int d);
-struct ends next();
+void remove_tail();
+int snaketouchingitself();
 
-int **board;
 int snake_length;
 struct point *snake;
+struct point apple;
 
 int snake_direction = RIGHT;
 int pause = 0;
+int gameover = 0;
 int running = 1;
 int screen_rows, screen_cols, game_columns;
 
 struct point {
   int y;
   int x;
-};
-
-struct ends {
-  struct point head;
-  struct point tail;
 };
 
 int main() {
@@ -59,7 +58,7 @@ int main() {
   // Snake
   init_pair(2, COLOR_GREEN, COLOR_GREEN);
   // Food
-  init_pair(4, COLOR_RED, COLOR_RED);
+  init_pair(1, COLOR_RED, COLOR_RED);
   // Background
   init_pair(3, COLOR_BLACK, COLOR_BLACK);
 
@@ -69,19 +68,14 @@ int main() {
   getmaxyx(stdscr, screen_rows, screen_cols);
   game_columns = screen_cols / 2;
 
-  board = malloc(screen_rows * sizeof(int *));
-
-  for (int i = 0; i < screen_rows; i++) {
-    board[i] = malloc(game_columns * sizeof(int));
-  }
-
   birthsnake();
+  makeapple();
 
   while (running) {
     c = getch();
     if (~c >> 31) handleinput(c);
 
-    if (!pause) update();
+    if (!pause && !gameover) update();
 
     printgame();
     refresh();
@@ -119,96 +113,107 @@ void handleinput(int c) {
 }
 
 void change_direction(int direction) {
-  if ( snake_direction == direction ) return;
-  if ( snake_direction == UP && direction == DOWN) return;
-  if ( snake_direction == DOWN && direction == UP) return;
-  if ( snake_direction == LEFT && direction == RIGHT) return;
-  if ( snake_direction == RIGHT && direction == LEFT) return;
+  if (snake_direction == direction) return;
+  if (snake_direction == UP && direction == DOWN) return;
+  if (snake_direction == DOWN && direction == UP) return;
+  if (snake_direction == LEFT && direction == RIGHT) return;
+  if (snake_direction == RIGHT && direction == LEFT) return;
 
   snake_direction = direction;
 }
 
-void update() {
-  struct ends nextthing = next(snake_direction);
-  struct point head = nextthing.head;
-  struct point tail = nextthing.tail;
+void remove_tail() {
+  struct point tail = snake[0];
+  mvprintw(0, 5, "y: %d\tx: %d\t length: %d\t", tail.y, tail.x, snake_length);
 
-  mvprintw(0, 5, "y: %d\tx: %d\t length: %d\t", head.y, head.x, snake_length);
-  board[head.y][head.x] = 1;
-  board[tail.y][tail.x] = 0;
+  attron(COLOR_PAIR(3));
+  mvaddch(tail.y, tail.x * 2, '.');
+  mvaddch(tail.y, tail.x * 2 + 1, '.');
+  attroff(COLOR_PAIR(3));
 }
 
-struct ends next(int direction) {
-  struct ends next;
-  next.head = snake[snake_length];
-  next.tail = snake[1];
+void update() {
+  struct point head = snake[snake_length];
 
-  switch (direction) {
+  remove_tail();
+
+  switch (snake_direction) {
     case UP:
-      /*mvprintw(0, 0, "up: %d", nexthead.y);*/
-      next.head.y -= 1;
+      head.y -= 1;
       break;
     case DOWN:
-      //mvprintw(0, 0, "down: %d", nexthead.y);
-      next.head.y += 1;
+      head.y += 1;
       break;
     case LEFT:
-      next.head.x -= 1;
+      head.x -= 1;
       break;
     case RIGHT:
-      next.head.x += 1;
+      head.x += 1;
       break;
   }
 
+  if (head.x > game_columns || head.x < 0 || head.y > screen_rows ||
+      head.y < 0) {
+    gameover = 1;
+    printgameover();
+  }
 
   // works -
-  //snake_length += 1;
-  //snake = realloc(snake, snake_length * sizeof *snake);
+  // snake_length += 1;
+  // snake = realloc(snake, snake_length * sizeof *snake);
   //--
 
-
   memmove(snake, snake + 1, snake_length * sizeof *snake);
-  snake[snake_length] = next.head;
-  snake[0] = next.tail;
+  snake[snake_length] = head;
 
-  return next;
+  if (snaketouchingitself()) {
+    gameover = 1;
+    printgameover();
+  }
+}
+
+int snaketouchingitself() {
+  for (int i = 0; i < snake_length; i++) {
+    if (snake[snake_length].x == snake[i].x &&
+        snake[snake_length].y == snake[i].y) {
+      return 1;
+    }
+  }
+
+  return 0;
 }
 
 void printgame() {
-  int c;
-  for (int y = 0; y < screen_rows; y++) {
-    for (int x = 0; x < game_columns; x++) {
-      c = board[y][x] ^ 3;
-      attron(COLOR_PAIR(c));
-      mvaddch(y + 1, x * 2, '.');
-      mvaddch(y + 1, x * 2 + 1, '.');
-      attroff(COLOR_PAIR(c));
-    }
+  for (int i = 0; i < snake_length; i++) {
+    attron(COLOR_PAIR(2));
+    mvprintw(snake[i].y, snake[i].x * 2, "ss");
+    attroff(COLOR_PAIR(2));
   }
+
+  attron(COLOR_PAIR(1));
+  mvprintw(apple.y, apple.x * 2, "aa");
+  attroff(COLOR_PAIR(1));
+
   if (pause) mvprintw(1, screen_cols / 2 - 3, "Paused");
 }
 
+void printgameover() {
+  mvprintw(screen_rows / 2 - 1, screen_cols / 2 - 5, "Game Over!");
+  mvprintw(screen_rows / 2, screen_cols / 2 - 5, "Game Over!");
+  mvprintw(screen_rows / 2 + 1, screen_cols / 2 - 5, "Game Over!");
+}
+
+void makeapple() {
+  apple.y = rand() % screen_rows;
+  apple.x = rand() % game_columns;
+}
+
 void birthsnake() {
-  board[10][20] = 1;
-  board[10][21] = 1;
-  board[10][22] = 1;
-  board[10][23] = 1;
-  board[10][24] = 1;
-  board[10][26] = 1;
+  snake_length = 15;
+  snake = malloc((snake_length + 1) * sizeof *snake);
 
-  snake = malloc(6 * sizeof *snake);
-  snake_length = 5;
-
-  snake[0].y = 10;
-  snake[0].x = 20;
-  snake[1].y = 10;
-  snake[1].x = 21;
-  snake[2].y = 10;
-  snake[2].x = 22;
-  snake[3].y = 10;
-  snake[3].x = 23;
-  snake[3].y = 10;
-  snake[3].x = 24;
-  snake[3].y = 10;
-  snake[3].x = 25;
+  for (int i = 0; i <= snake_length; i++) {
+    snake[i].y = 10;
+    snake[i].x = 21 + i;
+  }
 }
