@@ -1,5 +1,5 @@
 CC=gcc
-FLAGS=-Wall -Wextra -Wshadow -std=c99 -lm -D_POSIX_C_SOURCE=199309L -g
+FLAGS=-Wall -Wextra -Wshadow -std=c99 -g
 LIBS=-lncurses
 BIN=/usr/bin/
 

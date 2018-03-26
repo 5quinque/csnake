@@ -121,6 +121,9 @@ void handleinput(int c) {
       } else {
         move(yoffset, 0);
         clrtoeol();
+        mvhline(yoffset, xoffset, '-', COLS * 2);
+        mvaddch(yoffset, xoffset, '+');
+        mvaddch(yoffset, xoffset + (COLS * 2), '+');
       }
       break;
     case 'q':
@@ -244,8 +247,8 @@ void birthsnake() {
   snake = malloc((snake_length + 1) * sizeof *snake);
 
   for (int i = 0; i <= snake_length; i++) {
-    snake[i].y = 5;
-    snake[i].x = 5 + i;
+    snake[i].y = COLS / 2;
+    snake[i].x = 2 + i;
   }
 }
 
@@ -265,6 +268,7 @@ void newgame() {
   snake_direction = RIGHT;
   score = 0;
   gameover = 0;
+  pause = 0;
   birthsnake();
   makeapple();
 }
