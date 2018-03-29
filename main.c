@@ -1,12 +1,10 @@
 #include <ncurses.h>
-// memcpy(), memset()
+// memmove()
 #include <string.h>
 // time(), nanosleep()
 #include <time.h>
 // srand(), rand(), malloc()
 #include <stdlib.h>
-// CHAR_BIT
-#include <limits.h>
 
 #define ROWS 20
 #define COLS 20
@@ -17,18 +15,18 @@
 #define RIGHT 3
 
 void update();
-void printgame();
-void printgameover();
-void birthsnake();
-void makeapple();
-void newgame();
-void handleinput(int c);
+void print_game();
+void print_gameover();
+void birth_snake();
+void make_apple();
+void new_game();
+void handle_input(int c);
 void change_direction(int d);
 void remove_tail();
 void pop_direction_key();
 void handle_direction_key(int d);
-int snaketouchingitself();
-int snaketouchingapple();
+int snake_touching_itself();
+int snake_touching_apple();
 
 int snake_length;
 struct point *snake;
@@ -84,18 +82,18 @@ int main() {
   yoffset = screen_center_row - (ROWS / 2);
   xoffset = screen_center_col - COLS;
 
-  newgame();
+  new_game();
 
   while (running) {
-    while ((c = getch()) != ERR) handleinput(c);
+    while ((c = getch()) != ERR) handle_input(c);
 
     pop_direction_key();
 
     if (!paused && !gameover) {
       update();
-      printgame();
+      print_game();
     }
-    if (gameover) printgameover();
+    if (gameover) print_gameover();
 
     refresh();
     nanosleep(&ts, NULL);
@@ -107,7 +105,7 @@ int main() {
   return 0;
 }
 
-void handleinput(int c) {
+void handle_input(int c) {
   switch (c) {
     case 'w':
       handle_direction_key(UP);
@@ -133,24 +131,24 @@ void handleinput(int c) {
       running = 0;
       break;
     case 'n':
-      newgame();
+      new_game();
   }
 }
 
 void handle_direction_key(int direction) {
-  //if (direction_queue[0] == direction) return;
+  if (direction_count > 1 && direction_queue[direction_count-1] == direction)
+    return;
 
   direction_queue = realloc(direction_queue, (direction_count + 1) * sizeof(int));
-
 
   direction_queue[direction_count] = direction;
   direction_count++;
 
-  for (int i = 0; i < direction_count; i++) {
-    mvprintw(6+ i, 2, "d: %d", direction_queue[i]);
-    move(7+i,0);
-    clrtoeol();
-  }
+  /*for (int i = 0; i < direction_count; i++) {*/
+    /*mvprintw(6+ i, 2, "d: %d", direction_queue[i]);*/
+    /*move(7+i,0);*/
+    /*clrtoeol();*/
+  /*}*/
 
 }
 
@@ -162,12 +160,11 @@ void pop_direction_key() {
   direction_count--;
   direction_queue = realloc(direction_queue, (direction_count + 1) * sizeof(int));
 
-
-  for (int i = 0; i < direction_count; i++) {
-    mvprintw(6+ i, 2, "d: %d", direction_queue[i]);
-    move(7+i,0);
-    clrtoeol();
-  }
+  /*for (int i = 0; i < direction_count; i++) {*/
+    /*mvprintw(6+ i, 2, "d: %d", direction_queue[i]);*/
+    /*move(7+i,0);*/
+    /*clrtoeol();*/
+  /*}*/
 
 }
 
@@ -179,7 +176,7 @@ void change_direction(int direction) {
   if (snake_direction == LEFT && direction == RIGHT) return;
   if (snake_direction == RIGHT && direction == LEFT) return;
 
-  mvprintw(4, 5, "Changing direction %d", direction);
+  /*mvprintw(4, 5, "Changing direction %d", direction);*/
   snake_direction = direction;
 }
 
@@ -210,14 +207,14 @@ void update() {
   }
 
   if (head.x == COLS || head.x < 1 || head.y == ROWS || head.y < 1 ||
-      snaketouchingitself()) {
+      snake_touching_itself()) {
     gameover = 1;
     return;
   }
 
-  if (snaketouchingapple()) {
+  if (snake_touching_apple()) {
     score++;
-    makeapple();
+    make_apple();
     snake_length++;
     snake = realloc(snake, (snake_length + 1) * sizeof *snake);
   } else {
@@ -228,11 +225,11 @@ void update() {
   snake[snake_length] = head;
 }
 
-int snaketouchingapple() {
+int snake_touching_apple() {
   return (snake[snake_length].x == apple.x && snake[snake_length].y == apple.y);
 }
 
-int snaketouchingitself() {
+int snake_touching_itself() {
   for (int i = 0; i < snake_length; i++) {
     if (snake[snake_length].x == snake[i].x &&
         snake[snake_length].y == snake[i].y) {
@@ -243,7 +240,7 @@ int snaketouchingitself() {
   return 0;
 }
 
-void printgame() {
+void print_game() {
   for (int i = 0; i < snake_length; i++) {
     attron(COLOR_PAIR(1));
     mvprintw(snake[i].y + yoffset, snake[i].x * 2 + xoffset, "  ");
@@ -257,13 +254,13 @@ void printgame() {
   mvprintw(yoffset, xoffset + 3, "Score: %d", score);
 }
 
-void printgameover() {
+void print_gameover() {
   mvprintw(screen_rows / 2, screen_cols / 2 - 5, "Game Over!");
   mvprintw(screen_rows / 2 + 1, screen_cols / 2 - 15,
            "Press 'n' to start a new game!");
 }
 
-void makeapple() {
+void make_apple() {
   int touchingsnake = 0;
 
   do {
@@ -278,7 +275,7 @@ void makeapple() {
   } while (touchingsnake);
 }
 
-void birthsnake() {
+void birth_snake() {
   free(snake);
 
   snake_length = 3;
@@ -290,7 +287,7 @@ void birthsnake() {
   }
 }
 
-void newgame() {
+void new_game() {
   clear();
 
   // Draw the border
@@ -303,10 +300,14 @@ void newgame() {
   mvaddch(yoffset + ROWS, xoffset, '+');
   mvaddch(yoffset + ROWS, xoffset + (COLS * 2), '+');
 
+  direction_count = 0;
+  direction_queue = realloc(direction_queue, sizeof(int));
+  direction_queue[0] = RIGHT;
+
   snake_direction = RIGHT;
   score = 0;
   gameover = 0;
   paused = 0;
-  birthsnake();
-  makeapple();
+  birth_snake();
+  make_apple();
 }
