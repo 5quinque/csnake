@@ -85,15 +85,17 @@ int main() {
   new_game();
 
   while (running) {
-    while ((c = getch()) != ERR) handle_input(c);
-
+    while ((c = getch()) != ERR)
+      handle_input(c);
     pop_direction_key();
 
     if (!paused && !gameover) {
       update();
       print_game();
     }
-    if (gameover) print_gameover();
+
+    if (gameover)
+      print_gameover();
 
     refresh();
     nanosleep(&ts, NULL);
@@ -136,20 +138,14 @@ void handle_input(int c) {
 }
 
 void handle_direction_key(int direction) {
-  if (direction_count > 1 && direction_queue[direction_count-1] == direction)
+  if (direction_count > 1 && direction_queue[direction_count - 1] == direction)
     return;
 
-  direction_queue = realloc(direction_queue, (direction_count + 1) * sizeof(int));
+  direction_queue =
+      realloc(direction_queue, (direction_count + 1) * sizeof(int));
 
   direction_queue[direction_count] = direction;
   direction_count++;
-
-  /*for (int i = 0; i < direction_count; i++) {*/
-    /*mvprintw(6+ i, 2, "d: %d", direction_queue[i]);*/
-    /*move(7+i,0);*/
-    /*clrtoeol();*/
-  /*}*/
-
 }
 
 void pop_direction_key() {
@@ -157,15 +153,9 @@ void pop_direction_key() {
   change_direction(direction_queue[0]);
   memmove(direction_queue, direction_queue + 1, direction_count * sizeof(int));
 
+  direction_queue =
+      realloc(direction_queue, direction_count * sizeof(int));
   direction_count--;
-  direction_queue = realloc(direction_queue, (direction_count + 1) * sizeof(int));
-
-  /*for (int i = 0; i < direction_count; i++) {*/
-    /*mvprintw(6+ i, 2, "d: %d", direction_queue[i]);*/
-    /*move(7+i,0);*/
-    /*clrtoeol();*/
-  /*}*/
-
 }
 
 void change_direction(int direction) {
@@ -176,7 +166,6 @@ void change_direction(int direction) {
   if (snake_direction == LEFT && direction == RIGHT) return;
   if (snake_direction == RIGHT && direction == LEFT) return;
 
-  /*mvprintw(4, 5, "Changing direction %d", direction);*/
   snake_direction = direction;
 }
 
@@ -206,11 +195,9 @@ void update() {
       break;
   }
 
-  if (head.x == COLS || head.x < 1 || head.y == ROWS || head.y < 1 ||
-      snake_touching_itself()) {
+  if (head.x == COLS || head.x == 0 || head.y == ROWS || head.y == 0 ||
+      snake_touching_itself())
     gameover = 1;
-    return;
-  }
 
   if (snake_touching_apple()) {
     score++;
@@ -268,10 +255,9 @@ void make_apple() {
     apple.y = rand() % (ROWS - 1) + 1;
     apple.x = rand() % (COLS - 1) + 1;
 
-    for (int i = 0; i < snake_length; i++) {
-      if (apple.x == snake[i].x && apple.y == snake[i].y) touchingsnake = 1;
-    }
-
+    for (int i = 0; i < snake_length; i++)
+      if (apple.x == snake[i].x && apple.y == snake[i].y)
+        touchingsnake = 1;
   } while (touchingsnake);
 }
 
