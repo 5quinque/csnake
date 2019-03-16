@@ -17,3 +17,6 @@ make
 make clean
 ```
 
+## Requirements
+
+ncurses

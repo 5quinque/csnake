@@ -1,3 +1,13 @@
+/*
+ * csnake - play snake in the terminal
+ *
+ * todo
+ * ----
+ *  Show instructions
+ *  Allow arrow key controls
+ *  Better comments
+ *
+ */
 #include <ncurses.h>
 // memmove()
 #include <string.h>
