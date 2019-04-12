@@ -1,7 +1,5 @@
 # Snake
 
-### work in progress
-
 
 ## Building and running
 
